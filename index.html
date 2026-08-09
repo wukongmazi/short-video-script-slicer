@@ -1,0 +1,1097 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>短视频脚本切片机 · 零代码 AI 脚本工厂</title>
+<style>
+  :root{
+    --bg:#f5f7fb; --panel:#ffffff; --ink:#1f2733; --sub:#6b7686; --line:#e7ebf2;
+    --brand:#ff4d4f; --brand2:#ff7a45; --brand3:#ffa940; --accent:#1677ff;
+    --ok:#52c41a; --warn:#faad14; --chip:#eef2ff; --chipink:#3a5bdb;
+    --shadow:0 6px 24px rgba(31,39,51,.08); --radius:14px;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",Segoe UI,Roboto,Helvetica,Arial,sans-serif;
+    background:var(--bg); color:var(--ink); line-height:1.6; -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1180px;margin:0 auto;padding:18px 18px 120px;}
+  header.top{
+    background:linear-gradient(120deg,var(--brand) 0%,var(--brand2) 55%,var(--brand3) 100%);
+    color:#fff;border-radius:18px;padding:22px 26px;box-shadow:var(--shadow);position:relative;overflow:hidden;
+  }
+  header.top h1{margin:0;font-size:26px;letter-spacing:1px;display:flex;align-items:center;gap:10px;}
+  header.top .tag{font-size:13px;opacity:.92;margin-top:6px;max-width:760px;}
+  .badge{display:inline-block;background:rgba(255,255,255,.22);border:1px solid rgba(255,255,255,.4);
+    padding:2px 10px;border-radius:999px;font-size:12px;margin-right:6px;margin-top:8px;}
+  .pipeline{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;}
+  .pstep{background:rgba(255,255,255,.16);border:1px solid rgba(255,255,255,.3);border-radius:10px;
+    padding:6px 10px;font-size:12px;display:flex;align-items:center;gap:6px;}
+  .pstep b{font-weight:700;}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);
+    box-shadow:var(--shadow);padding:20px;margin-top:18px;}
+  .card h2{font-size:17px;margin:0 0 14px;display:flex;align-items:center;gap:8px;}
+  .card h2 .n{width:24px;height:24px;border-radius:7px;background:var(--brand);color:#fff;
+    display:inline-flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;}
+  .hint{font-size:12px;color:var(--sub);margin:-8px 0 12px;}
+  .local-note{background:#fffbe6;border:1px solid #ffe58f;border-radius:9px;padding:9px 11px;color:#875200;margin:10px 0 4px;font-size:12px;line-height:1.6;}
+
+  textarea#input{width:100%;min-height:190px;border:1px solid var(--line);border-radius:12px;
+    padding:14px;font-size:14px;resize:vertical;background:#fcfdff;color:var(--ink);line-height:1.7;font-family:inherit;}
+  textarea#input:focus{outline:none;border-color:var(--brand2);box-shadow:0 0 0 3px rgba(255,122,69,.15);}
+  .row{display:flex;flex-wrap:wrap;gap:12px;align-items:center;margin-top:12px;}
+  .row .grow{flex:1;min-width:180px;}
+  button{font-family:inherit;cursor:pointer;border:none;border-radius:10px;font-size:14px;transition:.15s;}
+  .btn{border:none;border-radius:10px;padding:9px 16px;font-weight:600;font-size:14px;}
+  .btn-ghost{background:#fff;border:1px solid var(--line);color:var(--ink);}
+  .btn-ghost:hover{border-color:var(--brand2);color:var(--brand);}
+  .btn-primary{background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;padding:12px 26px;font-size:15px;box-shadow:0 6px 16px rgba(255,77,79,.3);}
+  .btn-primary:hover{filter:brightness(1.05);transform:translateY(-1px);}
+  .btn-sm{padding:6px 12px;font-size:12px;}
+
+  label.opt{font-size:13px;color:var(--sub);display:flex;align-items:center;gap:6px;cursor:pointer;user-select:none;}
+  .chips{display:flex;flex-wrap:wrap;gap:8px;}
+  .chip{font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:#fff;color:var(--sub);cursor:pointer;user-select:none;}
+  .chip.on{background:var(--chip);border-color:var(--chipink);color:var(--chipink);font-weight:600;}
+  select,input[type=text],input[type=number]{font-family:inherit;font-size:13px;padding:7px 10px;border:1px solid var(--line);border-radius:9px;background:#fff;color:var(--ink);}
+  input[type=range]{accent-color:var(--brand);}
+
+  .collapse{margin-top:10px;border:1px dashed var(--line);border-radius:12px;padding:12px;background:#fafbfe;}
+  .collapse summary{cursor:pointer;font-size:13px;color:var(--accent);font-weight:600;}
+  .collapse .body{margin-top:10px;}
+
+  /* results */
+  #results{display:none;}
+  .stats{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:6px;}
+  .stat{background:#fff;border:1px solid var(--line);border-radius:12px;padding:10px 14px;flex:1;min-width:120px;text-align:center;}
+  .stat b{display:block;font-size:22px;color:var(--brand);}
+  .stat span{font-size:12px;color:var(--sub);}
+
+  .vp{border:1px solid var(--line);border-radius:14px;margin-top:14px;overflow:hidden;background:#fff;}
+  .vp-head{padding:14px 16px;display:flex;align-items:flex-start;gap:12px;cursor:pointer;background:linear-gradient(180deg,#fff,#fcfdff);}
+  .vp-rank{flex:0 0 34px;height:34px;border-radius:9px;background:var(--brand);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;}
+  .vp-rank.r2{background:var(--brand2);} .vp-rank.r3{background:var(--brand3);} .vp-rank.r4{background:#8c8c8c;}
+  .vp-title{flex:1;}
+  .vp-title .t{font-weight:700;font-size:15px;}
+  .vp-title .why{font-size:12px;color:var(--sub);margin-top:3px;}
+  .vp-score{font-size:12px;color:var(--warn);font-weight:700;white-space:nowrap;}
+  .caret{transition:.2s;color:var(--sub);}
+  .vp.open .caret{transform:rotate(90deg);}
+  .vp-body{display:none;padding:4px 16px 16px;border-top:1px solid var(--line);}
+  .vp.open .vp-body{display:block;}
+
+  .script{border:1px solid var(--line);border-radius:12px;margin-top:12px;}
+  .script-head{display:flex;align-items:center;gap:8px;padding:10px 14px;background:#f8faff;border-bottom:1px solid var(--line);}
+  .tagtype{font-size:11px;font-weight:700;padding:3px 9px;border-radius:7px;color:#fff;}
+  .tt-pain{background:#ff4d4f;} .tt-rev{background:#722ed1;} .tt-how{background:#13c2c2;}
+  .script-head .em{border:1px solid var(--line);border-radius:7px;padding:2px 8px;font-size:11px;color:var(--sub);}
+
+  .block{margin-top:10px;padding:0 14px 12px;}
+  .block h4{font-size:13px;margin:10px 0 6px;color:var(--ink);display:flex;align-items:center;gap:6px;}
+  .block h4 .i{width:18px;height:18px;border-radius:5px;background:var(--chip);color:var(--chipink);font-size:11px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;}
+  .hook{display:flex;align-items:center;gap:8px;font-size:13px;padding:6px 10px;border:1px solid var(--line);border-radius:9px;margin-top:6px;background:#fff;}
+  .hook .htag{flex:0 0 auto;font-size:11px;color:var(--brand2);font-weight:700;width:54px;}
+  .hook .hcopy{margin-left:auto;color:var(--sub);font-size:11px;cursor:pointer;}
+  .hook .hcopy:hover{color:var(--brand);}
+  pre.script-text{background:#fbfcfe;border:1px solid var(--line);border-radius:10px;padding:12px;font-size:13px;white-space:pre-wrap;margin:0;font-family:inherit;color:#243;}
+
+  table.story{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;}
+  table.story th,table.story td{border:1px solid var(--line);padding:7px 9px;text-align:left;vertical-align:top;}
+  table.story th{background:#f3f6ff;color:var(--sub);font-weight:600;width:74px;}
+
+  .bgm{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px;}
+  .bgm .b{border:1px solid var(--line);border-radius:10px;padding:8px 10px;font-size:12px;background:#fff;flex:1;min-width:150px;}
+  .bgm .b b{color:var(--brand2);}
+  .bgm .b .rhythm{color:var(--sub);display:block;margin-top:3px;}
+
+  .graft{font-size:12.5px;color:var(--sub);background:#fffbe6;border:1px solid #ffe58f;border-radius:10px;padding:10px 12px;margin-top:8px;}
+  .graft b{color:#ad6800;}
+  .graft .old{color:#bfbfbf;text-decoration:line-through;margin:0 2px;}
+  .graft .new{color:var(--brand);font-weight:700;margin:0 2px;}
+
+  .titles{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:6px;}
+  .title{border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12.5px;background:#fff;display:flex;gap:7px;align-items:flex-start;}
+  .title .cat{font-size:10px;font-weight:700;padding:2px 6px;border-radius:6px;color:#fff;flex:0 0 auto;margin-top:1px;}
+  .cat-xuan{background:#fa541c;} .cat-num{background:#1677ff;} .cat-comp{background:#13c2c2;} .cat-emo{background:#eb2f96;}
+
+  /* calendar */
+  .cal{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:12px;margin-top:8px;}
+  .day{border:1px solid var(--line);border-radius:12px;padding:12px;background:#fff;}
+  .day .dh{font-weight:700;font-size:14px;display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+  .day .dh .dow{font-size:12px;color:var(--sub);font-weight:400;}
+  .day .slot{border-top:1px dashed var(--line);padding:7px 0;font-size:12.5px;}
+  .day .slot .pl{display:inline-block;font-size:10px;font-weight:700;color:#fff;padding:1px 7px;border-radius:6px;margin-right:6px;}
+  .pl-dy{background:#000;} .pl-ks{background:#ff6600;} .pl-sp{background:#07c160;} .pl-xhs{background:#ff2442;}
+  .day .slot .tm{color:var(--brand2);font-weight:700;margin-right:4px;}
+
+  .exportbar{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:1px solid var(--line);
+    box-shadow:0 -6px 20px rgba(31,39,51,.08);padding:12px 18px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;z-index:30;}
+  .exportbar .lab{font-size:13px;color:var(--sub);margin-right:auto;}
+
+  .loading{position:fixed;inset:0;background:rgba(255,255,255,.78);display:none;align-items:center;justify-content:center;flex-direction:column;z-index:50;backdrop-filter:blur(2px);}
+  .loading.show{display:flex;}
+  .spinner{width:46px;height:46px;border:5px solid #ffe0d6;border-top-color:var(--brand);border-radius:50%;animation:spin 1s linear infinite;}
+  @keyframes spin{to{transform:rotate(360deg);}}
+  .loading p{margin-top:14px;color:var(--brand);font-weight:600;font-size:14px;}
+
+  .toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#1f2733;color:#fff;padding:10px 18px;border-radius:10px;font-size:13px;opacity:0;transition:.3s;z-index:60;pointer-events:none;}
+  .toast.show{opacity:1;}
+
+  /* ===== 自定义错误弹窗（替代 alert） ===== */
+  .modal-overlay{position:fixed;inset:0;background:rgba(31,39,51,.46);display:none;align-items:center;justify-content:center;z-index:70;backdrop-filter:blur(3px);padding:20px;}
+  .modal-overlay.show{display:flex;animation:modalFade .2s ease;}
+  @keyframes modalFade{from{opacity:0}to{opacity:1}}
+  .modal{background:#fff;border-radius:16px;width:100%;max-width:430px;box-shadow:0 22px 64px rgba(0,0,0,.24);overflow:hidden;animation:modalPop .24s cubic-bezier(.2,.85,.3,1.15);}
+  @keyframes modalPop{from{transform:translateY(16px) scale(.96);opacity:0}to{transform:translateY(0) scale(1);opacity:1}}
+  .modal-head{display:flex;align-items:center;gap:11px;padding:20px 22px 8px;}
+  .modal-head .ic{width:38px;height:38px;border-radius:50%;background:#fff1f0;color:var(--brand);display:flex;align-items:center;justify-content:center;font-size:20px;flex:0 0 auto;box-shadow:0 0 0 4px rgba(255,77,79,.08);}
+  .modal-head .ttl{font-size:16px;font-weight:700;color:var(--ink);}
+  .modal-body{padding:4px 22px 2px;font-size:13.5px;color:var(--sub);line-height:1.75;}
+  .modal-body .reason{margin-top:12px;background:#fff7f5;border:1px solid #ffd9d2;border-radius:10px;padding:11px 13px;color:#a8071a;font-size:12.5px;word-break:break-word;white-space:pre-wrap;line-height:1.6;}
+  .modal-foot{padding:16px 22px 20px;display:flex;justify-content:flex-end;}
+  .modal-foot .ok{background:linear-gradient(120deg,var(--brand),var(--brand2));color:#fff;border:none;padding:9px 26px;border-radius:10px;font-size:14px;cursor:pointer;font-weight:600;box-shadow:0 6px 16px rgba(255,77,79,.28);transition:filter .15s;}
+  .modal-foot .ok:hover{filter:brightness(1.06);}
+  .modal-foot .ok:active{transform:translateY(1px);}
+
+  footer{margin-top:24px;font-size:12px;color:var(--sub);text-align:center;line-height:1.8;}
+
+  @media(max-width:640px){ .titles{grid-template-columns:1fr;} .row{flex-direction:column;align-items:stretch;} }
+
+  .mode-tag{display:inline-block;margin:10px 0 2px;padding:6px 14px;border-radius:999px;font-size:13px;font-weight:600;background:#fff3e6;color:#c2560f;border:1px solid #ffd9b0;}
+  .mode-tag.on{background:#e8f8ef;color:#0f8a4a;border-color:#a8e6c4;}
+  .mode-tag.warn{background:#fff7e0;color:#b07d00;border-color:#ffe08a;}
+  .opt.switch{display:flex;align-items:center;gap:8px;font-weight:600;color:#7a3a10;background:#fff6ec;padding:8px 12px;border-radius:10px;margin-top:10px;}
+  .opt.switch input{width:18px;height:18px;accent-color:#ff7a45;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <h1>🎬 短视频脚本切片机</h1>
+    <div class="tag">把长文正文 / 直播录音文字，一键拆成 10 条可拍爆款短视频脚本。观点萃取 → 多版本脚本 → 黄金钩子 → 分镜 → BGM → 热点嫁接 → 排期 → 标题，全链路零代码产出。</div>
+    <div>
+      <span class="badge">🚀 零代码</span>
+      <span class="badge">🧠 内置 AI 引擎</span>
+      <span class="badge">📤 一键导出</span>
+    </div>
+    <div id="modeTag" class="mode-tag">🟠 内置「规则+模板」智能引擎</div>
+    <div class="pipeline">
+      <div class="pstep"><b>1</b> 内容输入</div>
+      <div class="pstep"><b>2</b> 观点萃取</div>
+      <div class="pstep"><b>3</b> 多版本脚本</div>
+      <div class="pstep"><b>4</b> 黄金钩子</div>
+      <div class="pstep"><b>5</b> 画面分镜</div>
+      <div class="pstep"><b>6</b> BGM 匹配</div>
+      <div class="pstep"><b>7</b> 热点嫁接</div>
+      <div class="pstep"><b>8</b> 排期+标题</div>
+    </div>
+  </header>
+
+  <!-- 输入 -->
+  <section class="card">
+    <h2><span class="n">1</span> 内容输入</h2>
+    <div class="hint">支持粘贴长文正文、直播录音转写文字，或正文内容。工具会自动切句、萃取观点。</div>
+    <textarea id="input" placeholder="在此粘贴你的长文 / 直播逐字稿 / 文章正文……&#10;例如：为什么你发的短视频一直没流量？其实90%的人都踩了这3个坑……"></textarea>
+    <div class="row">
+      <button class="btn btn-ghost btn-sm" id="loadDemo">📥 载入示例内容</button>
+      <button class="btn btn-ghost btn-sm" id="clearBtn">🧹 清空</button>
+      <div class="grow"></div>
+      <label class="opt">生成观点数
+        <input type="range" id="vpCount" min="5" max="8" value="6" />
+        <span id="vpCountVal">6</span> 条
+      </label>
+    </div>
+
+    <div class="row">
+      <div class="chips" id="platformChips">
+        <span class="chip on" data-p="抖音">抖音</span>
+        <span class="chip on" data-p="快手">快手</span>
+        <span class="chip on" data-p="视频号">视频号</span>
+        <span class="chip on" data-p="小红书">小红书</span>
+      </div>
+    </div>
+    <div class="row">
+      <label class="opt">情绪基调
+        <select id="emotionSel">
+          <option value="auto">自动识别</option>
+          <option value="励志">励志</option>
+          <option value="治愈">治愈</option>
+          <option value="紧张">紧张</option>
+          <option value="幽默">幽默</option>
+        </select>
+      </label>
+      <label class="opt">热点嫁接强度
+        <select id="graftSel">
+          <option value="mid">适中</option>
+          <option value="low">保守（仅替换明显词）</option>
+          <option value="high">激进（最大化蹭热点）</option>
+        </select>
+      </label>
+    </div>
+
+    <details class="collapse">
+      <summary>⚡ AI 增强模式（可选：接入大模型 API 提升质量）</summary>
+      <div class="body">
+        <div class="hint">留空则使用内置智能模板引擎（离线可用）。勾选启用并填写后，工具会调用兼容 OpenAI 的接口，对观点萃取与脚本正文启用大模型生成，失败自动回退内置引擎。</div>
+        <label class="opt switch"><input type="checkbox" id="aiOn"/> 启用 AI 增强模式（勾选后将对观点萃取与脚本正文启用大模型生成）</label>
+        <div class="local-note">🔒 以上配置仅保存在你<b>当前使用的浏览器</b>中，刷新页面不会丢失；但在新设备、隐身窗口或清除浏览器数据后将无法读取，请勿在公共电脑保存密钥。</div>
+        <div class="row">
+          <label class="opt">API 地址
+            <input type="text" id="aiEndpoint" placeholder="https://api.openai.com/v1/chat/completions" style="width:320px"/>
+          </label>
+          <label class="opt">API Key
+            <input type="text" id="aiKey" placeholder="sk-..." style="width:220px"/>
+          </label>
+          <label class="opt">模型
+            <input type="text" id="aiModel" placeholder="gpt-4o-mini" style="width:150px"/>
+          </label>
+        </div>
+        <div class="hint" style="margin-top:6px">魔搭创空间示例：地址填 <code>https://api-inference.modelscope.cn/v1/chat/completions</code>，模型填 <code>Qwen/Qwen3-30B-A3B-Instruct-2507</code></div>
+      </div>
+    </details>
+
+    <div class="row" style="margin-top:18px;">
+      <button class="btn btn-primary" id="genBtn">✂️ 开始切片，生成 10 条脚本</button>
+    </div>
+  </section>
+
+  <!-- 结果 -->
+  <section id="results">
+    <div class="card">
+      <h2><span class="n">★</span> 切片概览</h2>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="card">
+      <h2><span class="n">2-4</span> 观点萃取 · 多版本脚本 · 黄金钩子</h2>
+      <div class="hint">点击每个观点展开完整脚本（痛点型 / 反转型 / 干货型），每条含 5 种开场钩子、分镜、BGM 与热点嫁接结果。</div>
+      <div id="vpList"></div>
+    </div>
+    <div class="card">
+      <h2><span class="n">7</span> 脚本日历排期（7 天）</h2>
+      <div class="hint">按生成脚本数量自动排期，标注推荐发布时段与平台适配建议。</div>
+      <div class="cal" id="calendar"></div>
+    </div>
+    <div class="card">
+      <h2><span class="n">8</span> 爆款标题库</h2>
+      <div class="hint">每条脚本 10 个高点击标题，覆盖悬念 / 数字 / 对比 / 情感四类模板。</div>
+      <div id="titleAll"></div>
+    </div>
+  </section>
+
+  <footer>
+    短视频脚本切片机 · 用于快速产出可拍脚本<br/>
+  </footer>
+</div>
+
+<!-- 导出栏 -->
+<div class="exportbar" id="exportbar" style="display:none;">
+  <span class="lab">已生成结果，选择导出格式：</span>
+  <button class="btn btn-ghost btn-sm" id="expPdf">📕 PDF</button>
+  <button class="btn btn-ghost btn-sm" id="expMd">📝 Markdown</button>
+  <button class="btn btn-ghost btn-sm" id="expJson">🧾 JSON</button>
+  <button class="btn btn-ghost btn-sm" id="expTxt">📄 纯文本</button>
+  <button class="btn btn-ghost btn-sm" id="expCopy">📋 复制全部</button>
+  <button class="btn btn-ghost btn-sm" id="expTop">⬆️ 回到顶部</button>
+</div>
+
+<div class="loading" id="loading"><div class="spinner"></div><p>正在切片生成中…</p></div>
+<div class="toast" id="toast"></div>
+<div class="modal-overlay" id="modal">
+  <div class="modal" role="alertdialog" aria-modal="true">
+    <div class="modal-head"><div class="ic">⚠️</div><div class="ttl" id="modalTitle">提示</div></div>
+    <div class="modal-body"><div id="modalMsg"></div><div class="reason" id="modalReason" style="display:none"></div></div>
+    <div class="modal-foot"><button class="ok" id="modalOk">确定</button></div>
+  </div>
+</div>
+
+<script>
+/* ============== 内置智能引擎（无密钥可用） ============== */
+
+const HOTWORDS = {
+  "方法":"底层逻辑","技巧":"骚操作","秘籍":"通关攻略","重要":"刚需","学习":"沉浸式自学",
+  "赚钱":"搞钱","挣钱":"搞钱","推荐":"种草","很多":"全网","好用":"封神","注意":"避雷",
+  "问题":"痛点","解决":"破局","厉害":"天花板","简单":"傻瓜式","坚持":"长期主义",
+  "改变":"迭代","思考":"认知升级","机会":"风口","失败":"踩坑","成功":"上岸",
+  "内容":"干货","用户":"粉丝","观众":"受众","视频":"作品","流量":"自然流量",
+  "提升":"拉满","效果":"体感","开始":"入局","结束":"收尾","选择":"pick","真的":"血亏没早知道",
+  "应该":"必须","可以":"闭眼冲","建议":"划重点","发现":"惊了","原因":"底层原因"
+};
+const HOTWORDS_AGGR = Object.assign({}, HOTWORDS, {
+  "做":"整","说":"唠","看":"蹲","想":"脑补","用":"盘","找":"扒","给":"塞","拿":"薅"
+});
+
+const EMOTION_BGM = {
+  "励志":[
+    {name:"史诗感上升弦乐（如 Two Steps From Hell 风格）",rhythm:"0-3s 低沉铺底→8s 副歌爆发，配合'反转/顿悟'节点"},
+    {name:"轻快吉他扫弦 + 鼓点（Vlog 励志向）",rhythm:"每句字幕切一个点，高潮处加速"},
+    {name:"电子 Future Bass 上扬（年轻化）",rhythm:"副歌 drop 落在核心观点处"},
+    {name:"钢琴渐进式（治愈励志）",rhythm:"前慢后快，结尾留白"},
+    {name:"Hip-hop 激励 Beat（态度向）",rhythm:"鼓点卡在'别再/必须'等强指令词"}
+  ],
+  "治愈":[
+    {name:"Lo-fi 钢琴 + 白噪音（ASMR 感）",rhythm:"平缓无强拍，适合旁白独白"},
+    {name:"原声吉他指弹（慢生活）",rhythm:"每 4 秒一个和弦转换"},
+    {name:"环境音 + 轻弦乐（自然治愈）",rhythm:"留白多，字幕停留长"},
+    {name:"八音盒 / 音乐盒（少女治愈）",rhythm:"副歌处轻轻扬起"}
+  ],
+  "紧张":[
+    {name:"悬疑低频 Pulse（心跳鼓）",rhythm:"60-80bpm 心跳，危机点骤停"},
+    {name:"倒计时 Tick + 弦乐（紧迫感）",rhythm:"每句加速，结尾一声重音"},
+    {name:"Dark Trap Beat（冲突向）",rhythm:"808 鼓点在'但是'处砸下"},
+    {name:"News 紧迫弦乐（资讯紧张）",rhythm:"急促琶音推进"}
+  ],
+  "幽默":[
+    {name:"滑稽木琴 / 卡通音效（搞笑）",rhythm:"笑点处加 'boing' 音效"},
+    {name:"Funk 贝斯跳跃（轻松吐槽）",rhythm:"切分音配合抖机灵"},
+    {name:"游戏 Chip-tune（年轻玩梗）",rhythm:"每句一个小旋律"},
+    {name:"脱口秀轻爵士（吐槽向）",rhythm:"鼓刷打拍，留气口"}
+  ]
+};
+
+const EMOTION_STORY = {
+  "励志":{scene:"明亮窗边 / 城市天际线 / 逆光行走",act:"主角抬头、握拳、快步向前；镜头从低角度仰拍",sub:"金句用大字号居中",fx:"暖色滤镜+粒子光斑，关键句做放大震颤"},
+  "治愈":{scene:"咖啡馆 / 自然光房间 / 绿植阳台",act:"慢动作喝咖啡、翻书、微笑；手持轻微晃动",sub:"轻柔旁白字幕，半透明底",fx:"柔光+胶片颗粒，转场用溶解"},
+  "紧张":{scene:"暗调办公室 / 红蓝光环境 / 近景特写",act:"皱眉盯屏幕、手指敲击、猛然转身",sub:"关键词红色高亮跳动",fx:"快速剪辑+画面抖动+音效重音"},
+  "幽默":{scene:"居家客厅 / 夸张布景 / 表情特写",act:"瞪眼、摊手、夸张肢体；对着镜头吐槽",sub:"弹幕式花字+emoji",fx:"鬼畜缩放+卡通音效+贴纸"}
+};
+
+const EMOTION_WORDS = {
+  "励志":["成长","逆袭","坚持","突破","努力","梦想","上岸","改变","自律","未来"],
+  "治愈":["放松","治愈","温柔","慢生活","陪伴","安静","好好爱自己","休息","平静","和解"],
+  "紧张":["危机","踩坑","陷阱","崩了","慌","风险","警告","千万别","翻车","紧急"],
+  "幽默":["笑死","离谱","社死","吐槽","尴尬","反向","整活","冤种","搞笑","迷惑"]
+};
+
+const PAIN_WORDS = ["焦虑","恐惧","崩溃","后悔","亏","坑","痛","怕","担心","折磨","惨","毁","失败","错","迟","误","危机","崩"];
+const NUM_RE = /\d/;
+const Q_RE = /(为什么|如何|怎么|怎样|难道|吗\？|？)/;
+const REV_RE = /(但是|然而|其实|不过|事实上|别再|不要|相反|可是|殊不知)/;
+const EMOTION_RE = /(焦虑|恐惧|崩溃|后悔|励志|逆袭|治愈|温柔|紧张|危机|幽默|笑死|离谱|恭喜|可惜|惊人|可怕|值得|必看|秘密|真相|原来|竟然)/;
+
+function scoreSentence(s){
+  let score=0; const reasons=[];
+  if(EMOTION_RE.test(s)){score+=3; reasons.push("强情绪词");}
+  if(PAIN_WORDS.some(w=>s.includes(w))){score+=3; reasons.push("戳痛点");}
+  if(NUM_RE.test(s)){score+=2; reasons.push("含数字");}
+  if(Q_RE.test(s)){score+=2; reasons.push("制造疑问");}
+  if(REV_RE.test(s)){score+=2; reasons.push("反转/冲突");}
+  if(/[！!]/.test(s)){score+=1; reasons.push("强语气");}
+  const len=s.length;
+  if(len>=18&&len<=60){score+=2; reasons.push("长度适中");}
+  else if(len<12){score-=3;}
+  else if(len>90){score-=2;}
+  if(/(必须|一定要|千万别|记住|划重点|核心|关键)/.test(s)){score+=2; reasons.push("强指令");}
+  return {score, reasons};
+}
+
+function splitSentences(text){
+  return text.split(/(?<=[。！？!?\n])/).map(x=>x.trim()).filter(x=>x.length>=6);
+}
+
+function detectEmotion(text){
+  const counts={};
+  for(const e in EMOTION_WORDS){
+    let c=0; EMOTION_WORDS[e].forEach(w=>{ if(text.includes(w)) c++; });
+    counts[e]=c;
+  }
+  let best="励志", max=0;
+  for(const e in counts){ if(counts[e]>max){max=counts[e];best=e;} }
+  return best;
+}
+
+function extractViewpoints(input, count){
+  const sents = splitSentences(input);
+  const scored = sents.map(s=>{const r=scoreSentence(s); return {text:s, ...r};});
+  // 去重近似
+  const seen=new Set(); const uniq=[];
+  for(const it of scored){
+    const key=it.text.slice(0,12);
+    if(seen.has(key)) continue; seen.add(key); uniq.push(it);
+  }
+  uniq.sort((a,b)=>b.score-a.score);
+  const top = uniq.slice(0, count);
+  return top.map((it,i)=>({
+    rank:i+1,
+    text:it.text,
+    score: Math.max(60, Math.min(99, 60 + it.score*4)),
+    reasons: it.reasons.length?it.reasons:["观点完整度较高"]
+  }));
+}
+
+function keywordOf(vpText){
+  // 取核心短语：去掉标点，取前若干个有意义词
+  let t = vpText.replace(/[，。！？!?、：:；;""''（）()\s]/g," ");
+  let parts = t.split(/\s+/).filter(x=>x.length>=2);
+  if(parts.length===0) parts=[t.slice(0,6)];
+  return parts.slice(0,3).join("");
+}
+
+function buildScript(vp, type, emotion){
+  const kw = keywordOf(vp.text);
+  if(type==="pain"){
+    return `【痛点型】\n`+
+      `前3秒：${kw}这件事，你是不是也一直在踩坑却浑然不知？\n`+
+      `痛点放大：很多人直到${kw}出了问题才后悔，代价远比你想象的大。\n`+
+      `转折：其实只要换一个思路，困局立刻被破开。\n`+
+      `方法：${vp.text.replace(/[。！？!?]+$/,"")}，关键在于先看清再行动。\n`+
+      `行动号召：先点赞收藏，今晚就照着做，评论区告诉我你卡在哪。`;
+  }
+  if(type==="reversal"){
+    return `【反转型】\n`+
+      `常识：大家都觉得${kw}应该这么做。\n`+
+      `颠覆：但其实90%的人都理解反了，真正起作用的逻辑完全相反。\n`+
+      `证据：${vp.text.replace(/[。！？!?]+$/,"")}——这才是被忽略的真相。\n`+
+      `新结论：从现在起，按这个反直觉的方法走，效果立竿见影。\n`+
+      `互动：你之前是不是也搞错了？评论区扣1。`;
+  }
+  // how-to
+  return `【干货型】\n`+
+    `直给：${vp.text.replace(/[。！？!?]+$/,"")}\n`+
+    `步骤一：先明确你的目标，别被表面现象带偏。\n`+
+    `步骤二：用最小成本试错，快速验证。\n`+
+    `步骤三：跑通后持续放大，形成闭环。\n`+
+    `总结：方法不难，难的是马上开始。收藏这期，照做就行。`;
+}
+
+function buildHooks(scriptText, vp, type){
+  const kw = keywordOf(vp.text);
+  const short = vp.text.length>20? vp.text.slice(0,18)+"…" : vp.text;
+  return [
+    {style:"疑问式", text:`你是不是也${kw}？别急，看完这条就懂了。`},
+    {style:"数字式", text:`90%的人都不知道，${kw}竟然藏着这个坑。`},
+    {style:"冲突式", text:`别再${kw}了！再不改就真的晚了。`},
+    {style:"共鸣式", text:`说真的，${short}这件事，谁经历谁懂。`},
+    {style:"悬念式", text:`关于${kw}，最后一点最重要，很多人看到这就划走了。`}
+  ];
+}
+
+function buildStoryboard(type, emotion){
+  const base = EMOTION_STORY[emotion] || EMOTION_STORY["励志"];
+  const shots = [
+    {t:"0-3s",scene:base.scene,act:"镜头特写："+base.act.split("；")[0],sub:"黄金3秒钩子文案",fx:base.fx.split("，")[0]},
+    {t:"3-8s",scene:base.scene,act:base.act.split("；")[1]||base.act,sub:"抛出核心观点/冲突",fx:base.fx.split("，")[1]||"常规剪辑"},
+    {t:"8-20s",scene:base.scene,act:"中景展示方法/证据，可配演示画面",sub:"分点说明，字幕大字号",fx:"关键数据做放大镜特效"},
+    {t:"结尾",scene:base.scene,act:"主角看镜头/微笑/握拳",sub:"行动号召 + 关注引导",fx:"定格 + 关注按钮动画"}
+  ];
+  return shots;
+}
+
+function buildBGM(emotion){
+  const list = EMOTION_BGM[emotion] || EMOTION_BGM["励志"];
+  return list.slice(0, 4 + (Math.random()>0.5?1:0));
+}
+
+function graft(text, level){
+  const map = level==="high"? HOTWORDS_AGGR : (level==="low"? pickConservative() : HOTWORDS);
+  let out = text; const changed=[];
+  for(const k in map){
+    if(text.includes(k)){
+      const repl = map[k];
+      // 避免无限/错误替换：仅替换一次且新词不含旧词
+      if(!repl.includes(k) && !changed.some(c=>c.new===k)){
+        out = out.replace(k, repl);
+        changed.push({old:k,new:repl});
+      }
+    }
+  }
+  // 限制数量
+  const limit = level==="high"?99 : level==="low"?2 : 4;
+  const kept = changed.slice(0,limit);
+  // 重新应用限制：若超出，重做
+  if(kept.length!==changed.length){
+    out=text; const nc=[];
+    for(const k in map){ if(nc.length>=limit) break;
+      if(text.includes(k)){ const repl=map[k]; if(!repl.includes(k)){ out=out.replace(k,repl); nc.push({old:k,new:repl}); } }
+    }
+    return {text:out, changed:nc};
+  }
+  return {text:out, changed:kept};
+}
+function pickConservative(){
+  // 仅保留最明显、最安全的替换
+  return {"问题":"痛点","解决":"破局","赚钱":"搞钱","推荐":"种草","很多":"全网","好用":"封神","注意":"避雷","失败":"踩坑","成功":"上岸"};
+}
+
+function buildTitles(vp, type){
+  const kw = keywordOf(vp.text);
+  const short = vp.text.length>16? vp.text.slice(0,14)+"…" : vp.text;
+  const cats = {
+    xuan:["悬念式",[
+      `关于${kw}，99%的人都理解错了`,
+      `这条视频可能被限流，但我还是要说${kw}`,
+      `如果你也${kw}，请花30秒看完`
+    ]],
+    num:["数字式",[
+      `3个${kw}的底层逻辑，第2个最反直觉`,
+      `90%的人卡在${kw}，只因漏了这一步`,
+      `做${kw}前，先记住这5个数`
+    ]],
+    comp:["对比式",[
+      `别人${kw}越做越累，你却可以越做越轻松`,
+      `同样${kw}，为什么有人爆有人废？差别在这`,
+      `旧方法${kw}vs新思路，结果天差地别`
+    ]],
+    emo:["情感式",[
+      `说真的，${short}这件事谁经历谁懂`,
+      `别让${kw}变成你年底的后悔`,
+      `写给还在${kw}里迷茫的你`
+    ]]
+  };
+  const titles=[];
+  for(const key in cats){
+    const [label, arr]=cats[key];
+    arr.forEach(t=>titles.push({cat:key, label, text:t}));
+  }
+  return titles.slice(0,10);
+}
+
+function buildCalendar(viewpoints, platforms){
+  const days=["周一","周二","周三","周四","周五","周六","周日"];
+  const bestTime={
+    "抖音":"18:00-21:00","快手":"12:00 / 20:00","视频号":"21:00-22:00","小红书":"12:00-13:00 / 20:00-22:00"
+  };
+  const out=[];
+  let idx=0;
+  for(let d=0; d<7; d++){
+    const slots=[];
+    // 每天 1-2 条
+    const perDay = (d%3===0)?2:1;
+    for(let s=0; s<perDay && idx<viewpoints.length; s++){
+      const pl = platforms[idx % platforms.length];
+      const tm = bestTime[pl].split(" / ")[s % 2] || bestTime[pl];
+      slots.push({platform:pl, time:tm, vp:viewpoints[idx].text, rank:viewpoints[idx].rank});
+      idx++;
+    }
+    if(slots.length===0 && idx>=viewpoints.length) {
+      // 用剩余循环补齐让7天都有内容
+    }
+    out.push({day:"第"+(d+1)+"天", dow:days[d], slots});
+  }
+  // 若脚本多于排期格，继续循环补充到后续天
+  while(idx<viewpoints.length){
+    const d = idx % 7;
+    const pl = platforms[idx % platforms.length];
+    const tm = bestTime[pl].split(" / ")[0];
+    out[d].slots.push({platform:pl, time:tm, vp:viewpoints[idx].text, rank:viewpoints[idx].rank});
+    idx++;
+  }
+  return out;
+}
+
+/* ============== 主流程 ============== */
+let LAST=null;
+
+/* ============== AI 增强模式（真实调用 OpenAI 兼容接口） ============== */
+const HTTP_HINTS = {
+  400:"请求格式错误，请检查模型名是否被接口支持",
+  401:"API Key 无效或未填写",
+  403:"无权限访问该模型，请确认 Key 的调用权限",
+  404:"接口地址不正确，请检查 Endpoint 是否完整",
+  408:"请求超时",
+  429:"触发接口限流，请稍后重试或降低并发",
+  500:"服务端内部错误",
+  502:"网关错误，服务可能暂时不可用",
+  503:"服务暂时不可用，请稍后再试"
+};
+async function callAI(system, user){
+  const ep = (document.getElementById("aiEndpoint").value.trim()) || "https://api.openai.com/v1/chat/completions";
+  const key = document.getElementById("aiKey").value.trim();
+  const model = document.getElementById("aiModel").value.trim() || "gpt-4o-mini";
+  const ctrl = new AbortController();
+  const timer = setTimeout(()=>ctrl.abort(), 60000);
+  let res;
+  try{
+    res = await fetch(ep, {
+      method:"POST",
+      headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},
+      body: JSON.stringify({model, messages:[{role:"system",content:system},{role:"user",content:user}], temperature:0.85}),
+      signal: ctrl.signal
+    });
+  }catch(err){
+    if(err && err.name === "AbortError") throw new Error("请求超时（>60秒），请检查网络或模型响应速度");
+    const reason = (err && err.message) ? err.message : String(err);
+    throw new Error("网络请求失败：" + reason + "（请确认接口地址可访问，且当前环境允许跨域请求）");
+  } finally { clearTimeout(timer); }
+  if(!res.ok){
+    const hint = HTTP_HINTS[res.status] || "接口返回异常";
+    let extra = "";
+    try { const t = await res.text(); if(t && t.length < 240) extra = "：" + t.trim(); } catch(e){}
+    throw new Error("接口返回 HTTP " + res.status + "（" + hint + "）" + extra);
+  }
+  const j = await res.json();
+  const content = (j.choices && j.choices[0] && j.choices[0].message && j.choices[0].message.content) || "";
+  if(!content) throw new Error("接口返回的文本内容为空，请确认模型是否正常工作");
+  return content;
+}
+
+async function aiExtractViewpoints(text, count){
+  const sys = "你是资深短视频选题策划。从给定长文或直播逐字稿中萃取可独立成片的观点。严格只输出一个 JSON 对象,格式:{\"viewpoints\":[{\"text\":\"观点一句表述\",\"score\":90,\"reason\":\"为何有爆款潜力\"}]}。score 为 0-100 的爆款潜力分,数值越高越值得拍。不要任何解释文字。";
+  const usr = "请萃取最多 "+count+" 个观点,按爆款潜力从高到低排序:\n\n"+text.slice(0,6000);
+  const out = await callAI(sys, usr);
+  const m = out.match(/\{[\s\S]*\}/);
+  if(!m) throw new Error("AI 未返回 JSON");
+  const data = JSON.parse(m[0]);
+  if(!data.viewpoints || !data.viewpoints.length) throw new Error("AI 返回空观点");
+  let vps = data.viewpoints.slice(0, count).map((v,i)=>({
+    text: String(v.text||"").trim(),
+    score: Math.max(0, Math.min(100, parseInt(v.score||60,10)||60)),
+    reasons: [String(v.reason||"模型推荐")],
+    rank: i+1
+  })).filter(v=>v.text);
+  vps.sort((a,b)=>b.score-a.score);
+  vps.forEach((v,i)=>v.rank=i+1);
+  return vps;
+}
+
+async function aiBuildScript(vp, type, emo){
+  const map = {
+    pain:"痛点型(前3秒戳中用户恐惧,引发焦虑或危机感)",
+    reversal:"反转型(颠覆常识认知,制造悬念再释疑)",
+    how:"干货型(直接给出可操作的方法或步骤)"
+  };
+  const sys = "你是短视频口播脚本编剧,擅长把观点写成有网感的口语化脚本。情绪基调:"+emo+"。只输出脚本正文,150-260字,不要标题、不要解释、不要序号。";
+  const usr = "观点:"+vp.text+"\n结构类型:"+map[type]+"\n请写出该观点的脚本正文。";
+  return (await callAI(sys, usr)).trim();
+}
+
+function updateModeTag(active){
+  const el = document.getElementById("modeTag");
+  if(!el) return;
+  const aiOn = document.getElementById("aiOn").checked;
+  const aiKey = document.getElementById("aiKey").value.trim();
+  const model = document.getElementById("aiModel").value.trim() || "默认模型";
+  if(active===true){
+    el.className="mode-tag on";
+    el.textContent="🟢 AI 增强模式 · "+model;
+  } else if(active===false && aiOn && aiKey){
+    el.className="mode-tag warn";
+    el.textContent="🟡 AI 增强(本次已回退内置引擎)";
+  } else if(aiOn && aiKey){
+    el.className="mode-tag on";
+    el.textContent="🟢 AI 增强模式 · "+model;
+  } else {
+    el.className="mode-tag";
+    el.textContent="🟠 内置「规则+模板」智能引擎";
+  }
+}
+
+async function runGenerate(){
+  const input = document.getElementById("input").value.trim();
+  if(input.length < 20){
+    toast("请先输入至少 20 字的内容（可点『载入示例内容』）");
+    return;
+  }
+  const vpCount = parseInt(document.getElementById("vpCount").value,10);
+  const platforms = Array.from(document.querySelectorAll("#platformChips .chip.on")).map(c=>c.dataset.p);
+  if(platforms.length===0){ toast("请至少选择一个发布平台"); return; }
+  const emotionMode = document.getElementById("emotionSel").value;
+  const graftLevel = document.getElementById("graftSel").value;
+
+  const aiOn = document.getElementById("aiOn").checked;
+  const aiKey = document.getElementById("aiKey").value.trim();
+  const aiEp = document.getElementById("aiEndpoint").value.trim();
+  const aiReady = aiOn && aiKey && aiEp;
+
+  showLoading(true);
+  try{
+    const globalEmotion = emotionMode==="auto"? detectEmotion(input) : emotionMode;
+    let viewpoints, usedAI=false;
+
+    if(aiReady){
+      try{
+        viewpoints = await aiExtractViewpoints(input, vpCount);
+        for(const vp of viewpoints){
+          const emo = (emotionMode==="auto")? (detectEmotion(vp.text)||globalEmotion) : emotionMode;
+          vp.emotion = emo;
+          const types=[{key:"pain",label:"痛点型"},{key:"reversal",label:"反转型"},{key:"how",label:"干货型"}];
+          vp.scripts = [];
+          for(const t of types){
+            let raw;
+            try{ raw = await aiBuildScript(vp, t.key, emo); }catch(e){ raw = buildScript(vp, t.key, emo); }
+            const grafted = graft(raw, graftLevel);
+            vp.scripts.push({
+              type:t.key, typeLabel:t.label,
+              text:raw,
+              hooks: buildHooks(raw, vp, t.key),
+              storyboard: buildStoryboard(t.key, emo),
+              bgm: buildBGM(emo),
+              titles: buildTitles(vp, t.key),
+              grafted: grafted.text,
+              graftChanges: grafted.changed
+            });
+          }
+        }
+        usedAI = true;
+      }catch(e){
+        console.warn("AI 增强失败,回退内置引擎:", e);
+        showModal("AI 增强调用失败", "已自动回退内置「规则+模板」引擎继续生成，本次结果不受影响。可对照下方原因检查配置后重试。", e.message);
+        viewpoints = extractViewpoints(input, vpCount);
+        usedAI = false;
+      }
+    } else {
+      viewpoints = extractViewpoints(input, vpCount);
+    }
+
+    if(!usedAI){
+      viewpoints.forEach(vp=>{
+        const emo = (emotionMode==="auto")? (detectEmotion(vp.text)!==""?detectEmotion(vp.text):globalEmotion) : emotionMode;
+        vp.emotion = emo;
+        const types=[{key:"pain",label:"痛点型"},{key:"reversal",label:"反转型"},{key:"how",label:"干货型"}];
+        vp.scripts = types.map(t=>{
+          const raw = buildScript(vp, t.key, emo);
+          const grafted = graft(raw, graftLevel);
+          return {
+            type:t.key, typeLabel:t.label,
+            text:raw,
+            hooks: buildHooks(raw, vp, t.key),
+            storyboard: buildStoryboard(t.key, emo),
+            bgm: buildBGM(emo),
+            titles: buildTitles(vp, t.key),
+            grafted: grafted.text,
+            graftChanges: grafted.changed
+          };
+        });
+      });
+    }
+
+    const calendar = buildCalendar(viewpoints, platforms);
+    LAST = {viewpoints, calendar, meta:{input, platforms, globalEmotion, graftLevel, usedAI, generatedAt:new Date().toLocaleString("zh-CN")}};
+    renderResults(LAST);
+    document.getElementById("results").style.display="block";
+    document.getElementById("exportbar").style.display="flex";
+    document.getElementById("results").scrollIntoView({behavior:"smooth"});
+    updateModeTag(usedAI);
+  }catch(e){
+    console.error(e); showModal("生成出错", "本次生成未能完成，请检查输入内容或浏览器控制台后重试。", e.message);
+  }finally{
+    showLoading(false);
+  }
+}
+
+/* ============== 渲染 ============== */
+function renderResults(data){
+  // stats
+  const totalScripts = data.viewpoints.length*3;
+  const emoCount={};
+  data.viewpoints.forEach(v=>emoCount[v.emotion]=(emoCount[v.emotion]||0)+1);
+  const emoStr = Object.entries(emoCount).map(([k,v])=>k+"×"+v).join("，");
+  document.getElementById("stats").innerHTML = `
+    <div class="stat"><b>${data.viewpoints.length}</b><span>萃取观点数</span></div>
+    <div class="stat"><b>${totalScripts}</b><span>生成脚本总数</span></div>
+    <div class="stat"><b>${data.viewpoints.reduce((a,v)=>a+v.scripts[0].hooks.length,0)}</b><span>黄金钩子</span></div>
+    <div class="stat"><b>${data.calendar.length}</b><span>排期天数</span></div>
+    <div class="stat"><b>${emoStr}</b><span>情绪分布</span></div>
+  `;
+
+  // viewpoints
+  const vpList = document.getElementById("vpList");
+  vpList.innerHTML="";
+  data.viewpoints.forEach((vp,i)=>{
+    const div=document.createElement("div");
+    div.className="vp";
+    const rkCls = vp.rank<=3? "r"+vp.rank : "r4";
+    let scriptsHtml="";
+    vp.scripts.forEach(sc=>{
+      const hooksHtml = sc.hooks.map(h=>`<div class="hook"><span class="htag">${h.style}</span><span>${escapeHtml(h.text)}</span><span class="hcopy" data-copy="${encodeURIComponent(h.text)}">复制</span></div>`).join("");
+      const storyHtml = `<table class="story"><tr><th>时段</th><th>场景</th><th>人物动作</th><th>字幕重点</th><th>特效建议</th></tr>`+
+        sc.storyboard.map(s=>`<tr><td>${s.t}</td><td>${escapeHtml(s.scene)}</td><td>${escapeHtml(s.act)}</td><td>${escapeHtml(s.sub)}</td><td>${escapeHtml(s.fx)}</td></tr>`).join("")+`</table>`;
+      const bgmHtml = `<div class="bgm">`+sc.bgm.map(b=>`<div class="b"><b>${escapeHtml(b.name)}</b><span class="rhythm">节奏点：${escapeHtml(b.rhythm)}</span></div>`).join("")+`</div>`;
+      const graftHtml = sc.graftChanges.length? `<div class="graft"><b>🔥 热点嫁接：</b>`+
+        sc.graftChanges.map(c=>`<span class="old">${c.old}</span>→<span class="new">${c.new}</span>`).join("　")+
+        `<br/><span style="color:#ad6800">嫁接后脚本：</span>${escapeHtml(sc.grafted)}</div>` : "";
+      const titlesHtml = `<div class="titles">`+sc.titles.map(t=>`<div class="title"><span class="cat cat-${t.cat}">${t.label.slice(0,2)}</span><span>${escapeHtml(t.text)}</span></div>`).join("")+`</div>`;
+
+      scriptsHtml += `
+        <div class="script">
+          <div class="script-head">
+            <span class="tagtype tt-${sc.type==='pain'?'pain':sc.type==='reversal'?'rev':'how'}">${sc.typeLabel}</span>
+            <span class="em">情绪：${vp.emotion}</span>
+          </div>
+          <div class="block">
+            <h4><span class="i">文</span>完整脚本</h4>
+            <pre class="script-text">${escapeHtml(sc.text)}</pre>
+            ${graftHtml}
+            <h4><span class="i">钩</span>黄金3秒钩子（5 种风格）</h4>
+            ${hooksHtml}
+            <h4><span class="i">镜</span>画面分镜建议</h4>
+            ${storyHtml}
+            <h4><span class="i">乐</span>BGM 风格匹配</h4>
+            ${bgmHtml}
+            <h4><span class="i">题</span>爆款标题（10 个）</h4>
+            ${titlesHtml}
+          </div>
+        </div>`;
+    });
+
+    div.innerHTML = `
+      <div class="vp-head">
+        <div class="vp-rank ${rkCls}">${vp.rank}</div>
+        <div class="vp-title">
+          <div class="t">${escapeHtml(vp.text)}</div>
+          <div class="why">推荐理由：${vp.reasons.join(" · ")}</div>
+        </div>
+        <div class="vp-score">爆款潜力 ${vp.score}</div>
+        <div class="caret">▶</div>
+      </div>
+      <div class="vp-body">${scriptsHtml}</div>
+    `;
+    div.querySelector(".vp-head").addEventListener("click",()=>div.classList.toggle("open"));
+    vpList.appendChild(div);
+  });
+
+  // calendar
+  const cal=document.getElementById("calendar");
+  cal.innerHTML="";
+  data.calendar.forEach(day=>{
+    const slots = day.slots.length? day.slots.map(s=>`
+      <div class="slot">
+        <span class="pl pl-${s.platform==='抖音'?'dy':s.platform==='快手'?'ks':s.platform==='视频号'?'sp':'xhs'}">${s.platform}</span>
+        <span class="tm">${s.time}</span><br/>
+        <span style="color:#555;font-size:12px;">${escapeHtml(s.vp.length>24?s.vp.slice(0,24)+'…':s.vp)}</span>
+      </div>`).join("") : `<div class="slot" style="color:#bbb;">（本日留白，可用于互动/直播）</div>`;
+    const d=document.createElement("div");
+    d.className="day";
+    d.innerHTML=`<div class="dh">${day.day} <span class="dow">${day.dow}</span></div>${slots}`;
+    cal.appendChild(d);
+  });
+
+  // titles all
+  const ta=document.getElementById("titleAll");
+  ta.innerHTML="";
+  data.viewpoints.forEach((vp,i)=>{
+    const sc=vp.scripts[0];
+    const titlesHtml = `<div class="titles">`+sc.titles.map(t=>`<div class="title"><span class="cat cat-${t.cat}">${t.label.slice(0,2)}</span><span>${escapeHtml(t.text)}</span></div>`).join("")+`</div>`;
+    const d=document.createElement("div");
+    d.style.marginTop="12px";
+    d.innerHTML=`<div style="font-weight:700;font-size:13px;margin-bottom:4px;">观点 ${vp.rank}：${escapeHtml(vp.text.slice(0,30))}</div>${titlesHtml}`;
+    ta.appendChild(d);
+  });
+}
+
+/* ============== 导出 ============== */
+function exportMarkdown(){
+  if(!LAST) return "";
+  let md = `# 短视频脚本切片机 · 产出报告\n\n`;
+  md += `> 生成时间：${LAST.meta.generatedAt}　|　平台：${LAST.meta.platforms.join("/")}　|　热点强度：${LAST.meta.graftLevel}\n\n`;
+  md += `## 一、观点萃取（按爆款潜力排序）\n\n`;
+  LAST.viewpoints.forEach(vp=>{
+    md += `### 观点 ${vp.rank}（爆款潜力 ${vp.score}）\n`;
+    md += `- 内容：${vp.text}\n- 理由：${vp.reasons.join("、")}\n- 情绪：${vp.emotion}\n\n`;
+    vp.scripts.forEach(sc=>{
+      md += `#### 【${sc.typeLabel}】\n\n`;
+      md += `**完整脚本**\n${sc.text}\n\n`;
+      if(sc.graftChanges.length){
+        md += `**热点嫁接**：${sc.graftChanges.map(c=>c.old+"→"+c.new).join("，")}\n嫁接后：${sc.grafted}\n\n`;
+      }
+      md += `**黄金3秒钩子**\n`+sc.hooks.map(h=>`- ${h.style}：${h.text}`).join("\n")+`\n\n`;
+      md += `**画面分镜**\n| 时段 | 场景 | 人物动作 | 字幕重点 | 特效 |\n|---|---|---|---|---|\n`+
+        sc.storyboard.map(s=>`| ${s.t} | ${s.scene} | ${s.act} | ${s.sub} | ${s.fx} |`).join("\n")+`\n\n`;
+      md += `**BGM**\n`+sc.bgm.map(b=>`- ${b.name}（节奏点：${b.rhythm}）`).join("\n")+`\n\n`;
+      md += `**爆款标题**\n`+sc.titles.map(t=>`- [${t.label}] ${t.text}`).join("\n")+`\n\n`;
+    });
+  });
+  md += `## 二、7天发布排期\n\n`;
+  LAST.calendar.forEach(day=>{
+    md += `### ${day.day}（${day.dow}）\n`;
+    if(day.slots.length){
+      day.slots.forEach(s=>{ md += `- ${s.platform} @ ${s.time}：${s.vp}\n`; });
+    }else{ md += `- （留白，用于互动/直播）\n`; }
+    md += `\n`;
+  });
+  return md;
+}
+
+function download(filename, content, mime){
+  const blob=new Blob([content],{type:mime||"text/plain;charset=utf-8"});
+  const a=document.createElement("a");
+  a.href=URL.createObjectURL(blob); a.download=filename; a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+function exportJson(){ if(LAST) download("短视频脚本.json", JSON.stringify(LAST,null,2),"application/json"); }
+function exportTxt(){
+  if(!LAST) return;
+  let t = `短视频脚本切片机 产出\n生成时间：${LAST.meta.generatedAt}\n\n`;
+  LAST.viewpoints.forEach(vp=>{
+    t+=`【观点${vp.rank} | 潜力${vp.score}】${vp.text}\n理由：${vp.reasons.join("、")}\n\n`;
+    vp.scripts.forEach(sc=>{
+      t+=`── ${sc.typeLabel} ──\n${sc.text}\n\n钩子：\n`+sc.hooks.map(h=>`[${h.style}] ${h.text}`).join("\n")+`\n\n`;
+      t+=`分镜：\n`+sc.storyboard.map(s=>`${s.t} ${s.scene}|${s.act}|${s.sub}|${s.fx}`).join("\n")+`\n\n`;
+      t+=`BGM：\n`+sc.bgm.map(b=>`${b.name}（${b.rhythm}）`).join("\n")+`\n\n`;
+      t+=`标题：\n`+sc.titles.map(x=>`[${x.label}] ${x.text}`).join("\n")+`\n\n`;
+    });
+  });
+  t+="=== 7天排期 ===\n";
+  LAST.calendar.forEach(day=>{
+    t+=`${day.day}(${day.dow})\n`+day.slots.map(s=>`${s.platform}@${s.time} ${s.vp}`).join("\n")+`\n\n`;
+  });
+  download("短视频脚本.txt", t);
+}
+
+function exportPDF(){
+  if(!LAST){ toast("请先生成脚本"); return; }
+  const esc=escapeHtml;
+  let body = `<h1>🎬 短视频脚本切片机 · 产出报告</h1>
+    <div class="meta">生成时间：${esc(LAST.meta.generatedAt)}　|　平台：${esc(LAST.meta.platforms.join(" / "))}　|　热点强度：${esc(LAST.meta.graftLevel)}　|　观点 ${LAST.viewpoints.length} 个 · 脚本 ${LAST.viewpoints.length*3} 条</div>`;
+
+  body += `<h2>一、观点萃取 · 多版本脚本</h2>`;
+  LAST.viewpoints.forEach(vp=>{
+    body += `<div class="vp"><div class="vph"><span class="rk">${vp.rank}</span><span class="vpt">${esc(vp.text)}</span><span class="sc">爆款潜力 ${vp.score}</span></div>
+      <div class="why">推荐理由：${esc(vp.reasons.join(" · "))}　|　情绪：${esc(vp.emotion)}</div>`;
+    vp.scripts.forEach(sc=>{
+      body += `<div class="sec"><div class="tt tt-${sc.type}">${esc(sc.typeLabel)}</div>`;
+      body += `<pre>${esc(sc.text)}</pre>`;
+      if(sc.graftChanges.length){
+        body += `<div class="graft"><b>🔥 热点嫁接：</b>${sc.graftChanges.map(c=>esc(c.old)+"→<b>"+esc(c.new)+"</b>").join("　")}<br/>${esc(sc.grafted)}</div>`;
+      }
+      body += `<div class="lbl">黄金3秒钩子</div><ul>`+sc.hooks.map(h=>`<li><b>${esc(h.style)}：</b>${esc(h.text)}</li>`).join("")+`</ul>`;
+      body += `<div class="lbl">画面分镜</div><table><tr><th>时段</th><th>场景</th><th>人物动作</th><th>字幕重点</th><th>特效</th></tr>`+
+        sc.storyboard.map(s=>`<tr><td>${esc(s.t)}</td><td>${esc(s.scene)}</td><td>${esc(s.act)}</td><td>${esc(s.sub)}</td><td>${esc(s.fx)}</td></tr>`).join("")+`</table>`;
+      body += `<div class="lbl">BGM 风格</div><ul>`+sc.bgm.map(b=>`<li><b>${esc(b.name)}</b>（节奏点：${esc(b.rhythm)}）</li>`).join("")+`</ul>`;
+      body += `<div class="lbl">爆款标题（10 个）</div><ul class="titles">`+sc.titles.map(t=>`<li><span class="cat">${esc(t.label)}</span> ${esc(t.text)}</li>`).join("")+`</ul>`;
+      body += `</div>`;
+    });
+    body += `</div>`;
+  });
+
+  body += `<h2>二、7 天发布排期</h2><table class="cal"><tr><th>日期</th><th>安排</th></tr>`;
+  LAST.calendar.forEach(day=>{
+    const slots = day.slots.length? day.slots.map(s=>`<b>${esc(s.platform)}</b> @ ${esc(s.time)}：${esc(s.vp)}`).join("<br/>") : "（留白，用于互动/直播）";
+    body += `<tr><td class="d">${esc(day.day)}<br/><span class="dow">${esc(day.dow)}</span></td><td>${slots}</td></tr>`;
+  });
+  body += `</table><div class="foot">由「短视频脚本切片机」生成 · ${esc(LAST.meta.generatedAt)}</div>`;
+
+  const css = `
+    *{box-sizing:border-box;} body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:#1f2733;line-height:1.7;padding:28px 32px;font-size:13px;}
+    h1{font-size:22px;color:#ff4d4f;margin:0 0 6px;border-bottom:3px solid #ff7a45;padding-bottom:8px;}
+    h2{font-size:16px;color:#ff4d4f;margin:22px 0 10px;padding-left:8px;border-left:4px solid #ff7a45;}
+    .meta{font-size:12px;color:#6b7686;margin-bottom:10px;}
+    .vp{border:1px solid #e7ebf2;border-radius:8px;padding:12px 14px;margin:12px 0;page-break-inside:avoid;}
+    .vph{display:flex;align-items:center;gap:8px;} .rk{background:#ff4d4f;color:#fff;width:22px;height:22px;border-radius:6px;display:inline-flex;align-items:center;justify-content:center;font-weight:700;font-size:12px;}
+    .vpt{font-weight:700;flex:1;} .sc{color:#faad14;font-weight:700;font-size:12px;white-space:nowrap;}
+    .why{font-size:11px;color:#6b7686;margin:4px 0 8px;}
+    .sec{border-top:1px dashed #e7ebf2;padding-top:8px;margin-top:8px;page-break-inside:avoid;}
+    .tt{display:inline-block;color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:5px;margin-bottom:4px;}
+    .tt-pain{background:#ff4d4f;} .tt-reversal{background:#722ed1;} .tt-how{background:#13c2c2;}
+    pre{background:#fbfcfe;border:1px solid #e7ebf2;border-radius:6px;padding:10px;white-space:pre-wrap;font-family:inherit;font-size:12px;margin:4px 0;}
+    .graft{background:#fffbe6;border:1px solid #ffe58f;border-radius:6px;padding:8px;font-size:11.5px;margin:6px 0;}
+    .lbl{font-weight:700;font-size:12px;margin:8px 0 3px;color:#3a5bdb;}
+    ul{margin:2px 0 6px;padding-left:18px;} li{margin:2px 0;font-size:12px;}
+    .titles .cat{color:#fa541c;font-weight:700;font-size:10px;}
+    table{width:100%;border-collapse:collapse;font-size:11.5px;margin:4px 0;} th,td{border:1px solid #e7ebf2;padding:5px 7px;text-align:left;vertical-align:top;} th{background:#f3f6ff;color:#6b7686;}
+    table.cal .d{width:70px;font-weight:700;} .dow{color:#6b7686;font-weight:400;font-size:11px;}
+    .foot{margin-top:20px;text-align:center;color:#bbb;font-size:11px;}
+    @media print{ body{padding:0;} .vp,.sec{page-break-inside:avoid;} }
+  `;
+
+  const w = window.open("", "_blank");
+  if(!w){ toast("浏览器拦截了弹窗，请允许后重试"); return; }
+  w.document.write(`<!DOCTYPE html><html lang="zh-CN"><head><meta charset="utf-8"><title>短视频脚本报告</title><style>${css}</style></head><body>${body}</body></html>`);
+  w.document.close();
+  toast("已打开打印视图，请在弹窗中选择『另存为 PDF』");
+  setTimeout(()=>{ try{ w.focus(); w.print(); }catch(e){} }, 500);
+}
+
+function copyAll(){
+  const md=exportMarkdown();
+  if(navigator.clipboard && navigator.clipboard.writeText){
+    navigator.clipboard.writeText(md).then(()=>toast("已复制全部内容到剪贴板")).catch(()=>fallbackCopy(md));
+  } else fallbackCopy(md);
+}
+function fallbackCopy(text){
+  const ta=document.createElement("textarea"); ta.value=text; document.body.appendChild(ta);
+  ta.select(); try{document.execCommand("copy"); toast("已复制全部内容");}catch(e){toast("复制失败，请手动导出");}
+  document.body.removeChild(ta);
+}
+
+/* ============== 工具 ============== */
+function escapeHtml(s){ return String(s).replace(/[&<>"']/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c])); }
+function showLoading(b){ document.getElementById("loading").classList.toggle("show", b); }
+let toastTimer;
+function toast(msg){ const t=document.getElementById("toast"); t.textContent=msg; t.classList.add("show"); clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.classList.remove("show"),2400); }
+
+/* 自定义错误弹窗（不使用浏览器 alert） */
+function showModal(title, msg, reason){
+  const ov = document.getElementById("modal");
+  if(!ov) return;
+  document.getElementById("modalTitle").textContent = title || "提示";
+  document.getElementById("modalMsg").textContent = msg || "";
+  const rEl = document.getElementById("modalReason");
+  if(reason){ rEl.style.display="block"; rEl.textContent = "失败原因：" + reason; } else { rEl.style.display="none"; }
+  ov.classList.add("show");
+}
+function closeModal(){ const ov=document.getElementById("modal"); if(ov) ov.classList.remove("show"); }
+
+const DEMO = `为什么你发的短视频一直没流量？其实90%的人都踩了这3个坑。
+第一个坑：开场3秒没钩子，用户手指一滑就划走了。你辛辛苦苦拍的内容，前3秒决定了80%的完播率。
+第二个坑：只会讲干货，却从不戳用户的恐惧和焦虑。用户不关心你懂多少，只关心你能不能帮他解决眼前的麻烦。
+第三个坑：一条视频想装下所有内容，结果什么都讲不透。现在的内容逻辑是，把一个观点讲透，比讲十个观点管用。
+别再迷信所谓的爆款模板了。真正起作用的是，你先想清楚这条视频到底要解决用户的哪个具体问题。
+很多人学剪辑学了大半年，账号还是没做起来，原因不是技术不行，而是从没认真研究过平台的推荐算法逻辑。
+我见过一个素人账号，靠一条反常识的观点视频，三天涨了8万粉。他的秘诀只有一句话：把常识反过来讲。
+如果你现在才开始做短视频，记住一件事：先完成再完美，先发出去再优化。犹豫的每一天，都是被同行甩开的距离。
+做内容最怕的不是没灵感，而是明明知道问题在哪，却一直不动手改。改变从来不是靠想明白，是靠先干起来。`;
+
+/* ============== 事件绑定 ============== */
+document.getElementById("genBtn").addEventListener("click", runGenerate);
+
+/* AI 增强模式配置：保存在本机浏览器 localStorage，刷新不丢失 */
+const AI_CFG_KEY = "vsclip.aiConfig.v1";
+function saveAIConfig(){
+  try{
+    const c = {
+      on: document.getElementById("aiOn").checked,
+      endpoint: document.getElementById("aiEndpoint").value.trim(),
+      key: document.getElementById("aiKey").value.trim(),
+      model: document.getElementById("aiModel").value.trim()
+    };
+    localStorage.setItem(AI_CFG_KEY, JSON.stringify(c));
+  }catch(e){ /* 隐私模式或写入超限时静默忽略 */ }
+}
+function loadAIConfig(){
+  try{
+    const raw = localStorage.getItem(AI_CFG_KEY);
+    if(!raw) return;
+    const c = JSON.parse(raw);
+    if(typeof c.on === "boolean") document.getElementById("aiOn").checked = c.on;
+    if(typeof c.endpoint === "string") document.getElementById("aiEndpoint").value = c.endpoint;
+    if(typeof c.key === "string") document.getElementById("aiKey").value = c.key;
+    if(typeof c.model === "string") document.getElementById("aiModel").value = c.model;
+  }catch(e){ /* 忽略损坏的本地配置 */ }
+}
+["aiOn","aiEndpoint","aiKey","aiModel"].forEach(id=>{ const el=document.getElementById(id); if(el){
+  el.addEventListener("input",()=>{ updateModeTag(); saveAIConfig(); });
+  el.addEventListener("change",()=>{ updateModeTag(); saveAIConfig(); if(id!=="aiOn") toast("配置已保存到本机浏览器"); });
+} });
+loadAIConfig();
+updateModeTag();
+/* 错误弹窗关闭交互 */
+document.getElementById("modalOk").addEventListener("click", closeModal);
+document.getElementById("modal").addEventListener("click", e=>{ if(e.target.id==="modal") closeModal(); });
+document.addEventListener("keydown", e=>{ if(e.key==="Escape") closeModal(); });
+document.getElementById("loadDemo").addEventListener("click", ()=>{ document.getElementById("input").value=DEMO; toast("已载入示例内容，可直接生成"); });
+document.getElementById("clearBtn").addEventListener("click", ()=>{ document.getElementById("input").value=""; });
+document.getElementById("vpCount").addEventListener("input", e=>document.getElementById("vpCountVal").textContent=e.target.value);
+document.querySelectorAll("#platformChips .chip").forEach(c=>{
+  c.addEventListener("click", ()=>c.classList.toggle("on"));
+});
+document.getElementById("expPdf").addEventListener("click", exportPDF);
+document.getElementById("expMd").addEventListener("click", ()=>{ const md=exportMarkdown(); if(md) download("短视频脚本.md", md, "text/markdown"); });
+document.getElementById("expJson").addEventListener("click", exportJson);
+document.getElementById("expTxt").addEventListener("click", exportTxt);
+document.getElementById("expCopy").addEventListener("click", copyAll);
+document.getElementById("expTop").addEventListener("click", ()=>window.scrollTo({top:0,behavior:"smooth"}));
+// 钩子复制委托
+document.addEventListener("click", e=>{
+  if(e.target.classList.contains("hcopy")){
+    const txt=decodeURIComponent(e.target.dataset.copy);
+    if(navigator.clipboard) navigator.clipboard.writeText(txt).then(()=>toast("钩子已复制"));
+    else fallbackCopy(txt);
+  }
+});
+</script>
+</body>
+</html>
